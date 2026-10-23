@@ -1,0 +1,8 @@
+build/
+*.o
+*.user
+.vscode/
+*.cache
+.cache/
+.clang-format
+doc/
