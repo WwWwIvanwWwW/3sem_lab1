@@ -29,8 +29,10 @@ template <typename Key, typename T> class BinaryTree
 
 		if (!curr->lchild) {
 			curr = std::move(curr->rchild);
+			--size_;
 		} else if (!curr->rchild) {
 			curr = std::move(curr->lchild);
+			--size_;
 		} else {
 
 			BinaryNode *succ = curr->rchild.get();
@@ -39,7 +41,6 @@ template <typename Key, typename T> class BinaryTree
 			curr->data = succ->data;
 			removeImpl(curr->rchild, succ->data);
 		}
-		--size_;
 		return true;
 	}
 	int HeightImpl(const std::unique_ptr<BinaryNode> &node)
@@ -52,11 +53,22 @@ template <typename Key, typename T> class BinaryTree
 		return 1 + std::max(leftHeight, rightHeight);
 	}
 
+	int LNRImpl(const std::unique_ptr<BinaryNode> &node, std::string &str)
+	{
+		if (!node)
+			return 1;
+
+		LNRImpl(node->lchild, str);
+		str += std::to_string(node->data) + " ";
+		LNRImpl(node->rchild, str);
+		return 0;
+	}
+
   public:
-	[[nodiscard]] bool Insert(const T &value)
+	bool Insert(const T &value)
 	{
 		if (!root) {
-			root = std::make_unique<BinaryNode>(value);
+			root = std::make_unique<BinaryNode>(static_cast<Key>(value), value);
 			++size_;
 			return true;
 		}
@@ -66,14 +78,16 @@ template <typename Key, typename T> class BinaryTree
 		while (true) {
 			if (value < curr->data) {
 				if (!curr->lchild) {
-					curr->lchild = std::make_unique<BinaryNode>(value);
+					curr->lchild = std::make_unique<BinaryNode>(
+						static_cast<Key>(value), value);
 					++size_;
 					return true;
 				}
 				curr = curr->lchild.get();
 			} else if (curr->data < value) {
 				if (!curr->rchild) {
-					curr->rchild = std::make_unique<BinaryNode>(value);
+					curr->rchild = std::make_unique<BinaryNode>(
+						static_cast<Key>(value), value);
 					++size_;
 					return true;
 				}
@@ -83,7 +97,7 @@ template <typename Key, typename T> class BinaryTree
 		}
 	}
 
-	[[nodiscard]] bool Find(const T &value) const
+	bool Find(const T &value) const
 	{
 		if (!root) {
 			return false;
@@ -106,21 +120,17 @@ template <typename Key, typename T> class BinaryTree
 				return true;
 		}
 	}
-	[[nodiscard]] bool Remove(const T &value)
+	bool Remove(const T &value) { return removeImpl(root, value); }
+
+	int Height() { return HeightImpl(root); }
+
+	std::size_t Size() const { return size_; }
+
+	int LNR(std::string &str)
 	{
-		return removeImpl(root, value);
-	}
-
-	[[nodiscard]] int Height() { return HeightImpl(root); }
-
-	int LNR(const std::unique_ptr<BinaryNode> &node, std::string &str)
-	{
-		if (node == nullptr)
-			return 0;
-
-		LNR(node->lchild, &str);
-		str += std::to_string(node->data) + " ";
-		LNR(node->rchild, &str);
+		str = "";
+		if (LNRImpl(root, str))
+			return 1;
 		return 0;
 	}
 };
