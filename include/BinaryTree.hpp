@@ -17,15 +17,46 @@ template <typename Key, typename T> class BinaryTree
 	std::unique_ptr<BinaryNode> root;
 	std::size_t size_ = 0;
 
-	bool removeImpl(std::unique_ptr<BinaryNode> &curr, const T &value)
+	const BinaryNode *findNode(const Key &key) const
+	{
+		const BinaryNode *curr = root.get();
+		while (curr) {
+			if (key < curr->key)
+				curr = curr->lchild.get();
+			else if (curr->key < key)
+				curr = curr->rchild.get();
+			else
+				return curr;
+		}
+		return nullptr;
+	}
+
+	void copySubtree(const BinaryNode *src,
+					 std::unique_ptr<BinaryNode> &dst) const
+	{
+		if (!src)
+			return;
+		dst = std::make_unique<BinaryNode>(src->key, src->data);
+		copySubtree(src->lchild.get(), dst->lchild);
+		copySubtree(src->rchild.get(), dst->rchild);
+	}
+
+	std::size_t countNodes(const std::unique_ptr<BinaryNode> &node) const
+	{
+		if (!node)
+			return 0;
+		return 1 + countNodes(node->lchild) + countNodes(node->rchild);
+	}
+
+	bool removeImpl(std::unique_ptr<BinaryNode> &curr, const Key &key)
 	{
 		if (!curr)
 			return false;
 
-		if (value < curr->data)
-			return removeImpl(curr->lchild, value);
-		if (curr->data < value)
-			return removeImpl(curr->rchild, value);
+		if (key < curr->key)
+			return removeImpl(curr->lchild, key);
+		if (curr->key < key)
+			return removeImpl(curr->rchild, key);
 
 		if (!curr->lchild) {
 			curr = std::move(curr->rchild);
@@ -38,8 +69,9 @@ template <typename Key, typename T> class BinaryTree
 			BinaryNode *succ = curr->rchild.get();
 			while (succ->lchild)
 				succ = succ->lchild.get();
+			curr->key = succ->key;
 			curr->data = succ->data;
-			removeImpl(curr->rchild, succ->data);
+			removeImpl(curr->rchild, succ->key);
 		}
 		return true;
 	}
@@ -63,12 +95,68 @@ template <typename Key, typename T> class BinaryTree
 		LNRImpl(node->rchild, str);
 		return 0;
 	}
+	void rotateRight(std::unique_ptr<BinaryNode> &node)
+	{
+		if (!node || !node->lchild)
+			return;
+
+		std::unique_ptr<BinaryNode> newRoot = std::move(node->lchild);
+		node->lchild = std::move(newRoot->rchild);
+		newRoot->rchild = std::move(node);
+		node = std::move(newRoot);
+	}
+
+	int toList(std::unique_ptr<BinaryNode> &root)
+	{
+		int count = 0;
+		std::unique_ptr<BinaryNode> *curr = &root;
+
+		while (*curr) {
+			if ((*curr)->lchild) {
+				rotateRight(*curr);
+			} else {
+				count++;
+				curr = &((*curr)->rchild);
+			}
+		}
+		return count;
+	}
+
+	void compress(BinaryNode *dummy, int count)
+	{
+		BinaryNode *scanner = dummy;
+		for (int i = 0; i < count; ++i) {
+			if (!scanner->rchild || !scanner->rchild->rchild)
+				break;
+
+			auto child = std::move(scanner->rchild);
+			auto grandchild = std::move(child->rchild);
+
+			child->rchild = std::move(grandchild->lchild);
+			grandchild->lchild = std::move(child);
+			scanner->rchild = std::move(grandchild);
+
+			scanner = scanner->rchild.get();
+		}
+	}
+
+	template <typename NewT, typename Func>
+	void mapImpl(const std::unique_ptr<BinaryNode> &node,
+				 BinaryTree<Key, NewT> &newTree, Func &&func) const
+	{
+		if (!node)
+			return;
+
+		mapImpl(node->lchild, newTree, func);
+		newTree.Insert(node->key, func(node->data));
+		mapImpl(node->rchild, newTree, func);
+	}
 
   public:
-	bool Insert(const T &value)
+	bool Insert(const Key &key, const T &value)
 	{
 		if (!root) {
-			root = std::make_unique<BinaryNode>(static_cast<Key>(value), value);
+			root = std::make_unique<BinaryNode>(key, value);
 			++size_;
 			return true;
 		}
@@ -76,18 +164,16 @@ template <typename Key, typename T> class BinaryTree
 		BinaryNode *curr = root.get();
 
 		while (true) {
-			if (value < curr->data) {
+			if (key < curr->key) {
 				if (!curr->lchild) {
-					curr->lchild = std::make_unique<BinaryNode>(
-						static_cast<Key>(value), value);
+					curr->lchild = std::make_unique<BinaryNode>(key, value);
 					++size_;
 					return true;
 				}
 				curr = curr->lchild.get();
-			} else if (curr->data < value) {
+			} else if (curr->key < key) {
 				if (!curr->rchild) {
-					curr->rchild = std::make_unique<BinaryNode>(
-						static_cast<Key>(value), value);
+					curr->rchild = std::make_unique<BinaryNode>(key, value);
 					++size_;
 					return true;
 				}
@@ -97,30 +183,12 @@ template <typename Key, typename T> class BinaryTree
 		}
 	}
 
-	bool Find(const T &value) const
+	const T *Find(const Key &key) const
 	{
-		if (!root) {
-			return false;
-		}
-
-		const BinaryNode *curr = root.get();
-
-		while (true) {
-			if (value < curr->data) {
-				if (!curr->lchild) {
-					return false;
-				}
-				curr = curr->lchild.get();
-			} else if (curr->data < value) {
-				if (!curr->rchild) {
-					return false;
-				}
-				curr = curr->rchild.get();
-			} else
-				return true;
-		}
+		const BinaryNode *node = findNode(key);
+		return node ? &node->data : nullptr;
 	}
-	bool Remove(const T &value) { return removeImpl(root, value); }
+	bool Remove(const Key &key) { return removeImpl(root, key); }
 
 	int Height() { return HeightImpl(root); }
 
@@ -132,5 +200,53 @@ template <typename Key, typename T> class BinaryTree
 		if (LNRImpl(root, str))
 			return 1;
 		return 0;
+	}
+
+	int Balance()
+	{
+		if (!root)
+			return 1;
+
+		std::unique_ptr<BinaryNode> dummy =
+			std::make_unique<BinaryNode>(Key{}, T{});
+		dummy->rchild = std::move(root);
+
+		int count = toList(dummy->rchild);
+
+		int m = 0;
+		int power = 1;
+		while (power <= count) {
+			m = power;
+			power = power * 2 + 1;
+		}
+
+		compress(dummy.get(), count - m);
+
+		while (m > 1) {
+			m /= 2;
+			compress(dummy.get(), m);
+		}
+
+		root = std::move(dummy->rchild);
+		return 0;
+	}
+
+	template <typename Func> auto Map(Func &&func) const
+	{
+		using NewT = decltype(func(std::declval<const T &>()));
+		BinaryTree<Key, NewT> newTree;
+		mapImpl(root, newTree, func);
+		return newTree;
+	}
+
+	BinaryTree Subtree(const Key &key) const
+	{
+		BinaryTree result;
+		const BinaryNode *node = findNode(key);
+		if (node) {
+			copySubtree(node, result.root);
+			result.size_ = countNodes(result.root);
+		}
+		return result;
 	}
 };
