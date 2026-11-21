@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
+#include <sstream>
 #include <string>
+
+enum class Order { LNR, LRN, NLR, NRL, RLN, RNL };
 template <typename Key, typename T> class BinaryTree
 {
   private:
@@ -16,6 +19,10 @@ template <typename Key, typename T> class BinaryTree
 	};
 	std::unique_ptr<BinaryNode> root;
 	std::size_t size_ = 0;
+
+	static constexpr char kOrders[][3] = {{'L', 'N', 'R'}, {'L', 'R', 'N'},
+										  {'N', 'L', 'R'}, {'N', 'R', 'L'},
+										  {'R', 'L', 'N'}, {'R', 'N', 'L'}};
 
 	const BinaryNode *findNode(const Key &key) const
 	{
@@ -75,7 +82,7 @@ template <typename Key, typename T> class BinaryTree
 		}
 		return true;
 	}
-	int HeightImpl(const std::unique_ptr<BinaryNode> &node)
+	int HeightImpl(const std::unique_ptr<BinaryNode> &node) const
 	{
 		if (!node)
 			return 0;
@@ -85,14 +92,21 @@ template <typename Key, typename T> class BinaryTree
 		return 1 + std::max(leftHeight, rightHeight);
 	}
 
-	int LNRImpl(const std::unique_ptr<BinaryNode> &node, std::string &str)
+	int TraversalImpl(std::ostream &os, Order format,
+					  const std::unique_ptr<BinaryNode> &node) const
 	{
 		if (!node)
 			return 1;
 
-		LNRImpl(node->lchild, str);
-		str += std::to_string(node->data) + " ";
-		LNRImpl(node->rchild, str);
+		for (char i : kOrders[static_cast<int>(format)]) {
+			if (i == 'L')
+				TraversalImpl(os, format, node->lchild);
+			else if (i == 'R')
+				TraversalImpl(os, format, node->rchild);
+			else {
+				os << node->data << ' ';
+			}
+		}
 		return 0;
 	}
 	void rotateRight(std::unique_ptr<BinaryNode> &node)
@@ -190,16 +204,16 @@ template <typename Key, typename T> class BinaryTree
 	}
 	bool Remove(const Key &key) { return removeImpl(root, key); }
 
-	int Height() { return HeightImpl(root); }
+	int Height() const { return HeightImpl(root); }
 
 	std::size_t Size() const { return size_; }
 
-	int LNR(std::string &str)
+	int Traversal(std::string &str, Order format = Order::LNR) const
 	{
-		str = "";
-		if (LNRImpl(root, str))
-			return 1;
-		return 0;
+		std::ostringstream oss;
+		int result = TraversalImpl(oss, format, root);
+		str = oss.str();
+		return result;
 	}
 
 	int Balance()

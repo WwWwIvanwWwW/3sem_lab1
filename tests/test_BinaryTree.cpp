@@ -151,7 +151,7 @@ TEST(BinaryTreeTest, RemoveNodeWithManyChildren)
 	tree.Insert(6, 6);
 	EXPECT_EQ(4u, tree.Size());
 	EXPECT_TRUE(tree.Remove(5));
-	tree.LNR(str);
+	tree.Traversal(str);
 	EXPECT_EQ("3 6 7 ", str);
 	EXPECT_EQ(3u, tree.Size());
 }
@@ -201,34 +201,214 @@ TEST(BinaryTreeTest, HeightOfUnbalancedTree)
 	EXPECT_EQ(3, tree.Height());
 }
 
-TEST(BinaryTreeTest, LNREmptyTree)
+TEST(BinaryTreeTest, TraversalEmptyTree)
 {
 	BinaryTree<int, int> tree;
 	std::string str;
-	tree.LNR(str);
+
+	EXPECT_EQ(1, tree.Traversal(str, Order::LNR));
+	EXPECT_TRUE(str.empty());
+
+	EXPECT_EQ(1, tree.Traversal(str, Order::NLR));
 	EXPECT_TRUE(str.empty());
 }
 
-TEST(BinaryTreeTest, LNRSingleElement)
+TEST(BinaryTreeTest, TraversalSingleNode)
 {
 	BinaryTree<int, int> tree;
-	std::string str;
 	tree.Insert(5, 5);
-	tree.LNR(str);
+	std::string str;
+
+	EXPECT_EQ(0, tree.Traversal(str, Order::LNR));
+	EXPECT_EQ("5 ", str);
+
+	EXPECT_EQ(0, tree.Traversal(str, Order::NLR));
 	EXPECT_EQ("5 ", str);
 }
 
-TEST(BinaryTreeTest, LNRMultipleElements)
+TEST(BinaryTreeTest, TraversalLNR)
 {
 	BinaryTree<int, int> tree;
-	std::string str;
 	tree.Insert(5, 5);
 	tree.Insert(3, 3);
 	tree.Insert(7, 7);
 	tree.Insert(1, 1);
 	tree.Insert(4, 4);
-	tree.LNR(str);
-	EXPECT_EQ("1 3 4 5 7 ", str);
+	tree.Insert(6, 6);
+	tree.Insert(8, 8);
+
+	std::string str;
+	tree.Traversal(str, Order::LNR);
+	EXPECT_EQ("1 3 4 5 6 7 8 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalLRN)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+	tree.Insert(1, 1);
+	tree.Insert(4, 4);
+	tree.Insert(6, 6);
+	tree.Insert(8, 8);
+
+	std::string str;
+	tree.Traversal(str, Order::LRN);
+	EXPECT_EQ("1 4 3 6 8 7 5 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalNLR)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+	tree.Insert(1, 1);
+	tree.Insert(4, 4);
+	tree.Insert(6, 6);
+	tree.Insert(8, 8);
+
+	std::string str;
+	tree.Traversal(str, Order::NLR);
+	EXPECT_EQ("5 3 1 4 7 6 8 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalNRL)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+	tree.Insert(1, 1);
+	tree.Insert(4, 4);
+	tree.Insert(6, 6);
+	tree.Insert(8, 8);
+
+	std::string str;
+	tree.Traversal(str, Order::NRL);
+	EXPECT_EQ("5 7 8 6 3 4 1 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalRLN)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+	tree.Insert(1, 1);
+	tree.Insert(4, 4);
+	tree.Insert(6, 6);
+	tree.Insert(8, 8);
+
+	std::string str;
+	tree.Traversal(str, Order::RLN);
+	EXPECT_EQ("8 6 7 4 1 3 5 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalRNL)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+	tree.Insert(1, 1);
+	tree.Insert(4, 4);
+	tree.Insert(6, 6);
+	tree.Insert(8, 8);
+
+	std::string str;
+	tree.Traversal(str, Order::RNL);
+	EXPECT_EQ("8 7 6 5 4 3 1 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalDefaultOrder)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+
+	std::string str;
+	tree.Traversal(str);
+	EXPECT_EQ("3 5 7 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalWithDifferentValues)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 50);
+	tree.Insert(3, 30);
+	tree.Insert(7, 70);
+	tree.Insert(1, 10);
+	tree.Insert(4, 40);
+
+	std::string str;
+	tree.Traversal(str, Order::LNR);
+	EXPECT_EQ("10 30 40 50 70 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalStringValues)
+{
+	BinaryTree<int, std::string> tree;
+	tree.Insert(2, "two");
+	tree.Insert(1, "one");
+	tree.Insert(3, "three");
+
+	std::string str;
+	tree.Traversal(str, Order::LNR);
+	EXPECT_EQ("one two three ", str);
+
+	tree.Traversal(str, Order::NLR);
+	EXPECT_EQ("two one three ", str);
+}
+
+TEST(BinaryTreeTest, TraversalUnbalancedTree)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(1, 1);
+	tree.Insert(2, 2);
+	tree.Insert(3, 3);
+	tree.Insert(4, 4);
+
+	std::string str;
+	tree.Traversal(str, Order::LNR);
+	EXPECT_EQ("1 2 3 4 ", str);
+
+	tree.Traversal(str, Order::RNL);
+	EXPECT_EQ("4 3 2 1 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalAfterBalance)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(1, 1);
+	tree.Insert(2, 2);
+	tree.Insert(3, 3);
+	tree.Insert(4, 4);
+	tree.Insert(5, 5);
+
+	tree.Balance();
+
+	std::string str;
+	tree.Traversal(str, Order::LNR);
+	EXPECT_EQ("1 2 3 4 5 ", str);
+}
+
+TEST(BinaryTreeTest, TraversalAfterRemove)
+{
+	BinaryTree<int, int> tree;
+	tree.Insert(5, 5);
+	tree.Insert(3, 3);
+	tree.Insert(7, 7);
+	tree.Insert(1, 1);
+	tree.Insert(4, 4);
+
+	tree.Remove(3);
+
+	std::string str;
+	tree.Traversal(str, Order::LNR);
+	EXPECT_EQ("1 4 5 7 ", str);
 }
 
 TEST(BinaryTreeTest, SizeAfterOperations)
@@ -348,11 +528,11 @@ TEST(BinaryTreeTest, BalancePreservesInOrderTraversal)
 	tree.Insert(6, 6);
 	tree.Insert(8, 8);
 
-	tree.LNR(strBefore);
+	tree.Traversal(strBefore);
 
 	tree.Balance();
 
-	tree.LNR(strAfter);
+	tree.Traversal(strAfter);
 
 	EXPECT_EQ(strBefore, strAfter);
 	EXPECT_EQ("1 3 4 5 6 7 8 ", strAfter);
@@ -465,10 +645,10 @@ TEST(BinaryTreeTest, MapPreservesStructure)
 	tree.Insert(4, 4);
 
 	std::string originalStr, mappedStr;
-	tree.LNR(originalStr);
+	tree.Traversal(originalStr);
 
 	auto newTree = tree.Map([](const int &val) { return val * 10; });
-	newTree.LNR(mappedStr);
+	newTree.Traversal(mappedStr);
 
 	EXPECT_EQ("1 3 4 5 7 ", originalStr);
 	EXPECT_EQ("10 30 40 50 70 ", mappedStr);
