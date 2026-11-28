@@ -263,4 +263,12 @@ template <typename Key, typename T> class BinaryTree
 		}
 		return result;
 	}
+
+	bool isLeaf(BinaryNode *node)
+	{
+		if (!node)
+			return false;
+
+		return !node->lchild && !node->rchild;
+	}
 };
